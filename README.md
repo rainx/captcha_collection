@@ -73,7 +73,7 @@ python3 guis/main.py
 
 插件格式
 
-```
+```python
 """
 config the name of site , it will provide as the site param to post to API server.
 """
