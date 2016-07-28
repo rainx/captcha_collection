@@ -54,6 +54,14 @@ http://[serverhost]/admin/anwser/captchaanwser
 GUI 客户端
 ---------
 
+### 运行
+
+```
+python3 guis/main.py
+```
+
+### 插件
+
 提供一种插件机制, 运行后选择指定的网站开始输入, 输入答案后按回车键, 结果会自动提交到服务器端的rest api上
 
 插件地址
