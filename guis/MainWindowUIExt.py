@@ -8,23 +8,26 @@ import shutil
 import datetime
 from pprint import  pprint
 
+
 CAPTCHA_COLLECTION_POST_API = 'http://captcha.rainx.cn/anwser/post'
 
 
 class MainWindowUIExt(QtGui.QMainWindow, Ui_captcha_collect_cli):
 
-    def __init__(self, conf:dict):
+    def __init__(self, site_mod:dict):
         """
 
         :param sim: Simulation the simulation client
         """
         super().__init__()
-        self.conf = conf
+        self.site_mod = site_mod
         self.session = requests.session();
-        self.image_path = os.path.join(tempfile.gettempdir(), 'vcode.jpg')
+        self.image_path = os.path.join(tempfile.gettempdir(), 'vcode' + self.site_mod['image_ext'])
 
         # 访问登陆首页
-        self.session.get("https://etrade.cs.ecitic.com/webtrade/login/login.jsp?ssl=true&ftype=bsn&toUrl=");
+        response = self.session.get(self.site_mod['get_entry_page']())
+
+        self.fp_content = response.text
 
         self.setupUi(self)
 
@@ -39,7 +42,9 @@ class MainWindowUIExt(QtGui.QMainWindow, Ui_captcha_collect_cli):
         self.showCode()
 
     def showCode(self):
-        verify_code_response = self.session.get('https://etrade.cs.ecitic.com/webtrade/pic/Kaptcha.jpg')
+
+        captcha_url = self.site_mod['get_captcha_url'](self.fp_content, self.session)
+        verify_code_response = self.session.get(captcha_url)
         # 保存验证码
         with open(self.image_path, 'wb') as f:
             f.write(verify_code_response.content)
@@ -56,22 +61,23 @@ class MainWindowUIExt(QtGui.QMainWindow, Ui_captcha_collect_cli):
         img_tmp_path = os.path.join(tempfile.gettempdir(),
                                     str(int(datetime.datetime.timestamp(datetime.datetime.now()))) + ".tmp");
         shutil.copy2(self.image_path, img_tmp_path)
-        self.send_thread = SendCaptchaCode(code, img_tmp_path)
+        self.send_thread = SendCaptchaCode(code, img_tmp_path, self.site_mod)
         self.send_thread.start()
 
         self.showCode()
 
 class SendCaptchaCode(threading.Thread):
-    def __init__(self, code, img_path):
+    def __init__(self, code, img_path, site_mod):
         self.code = code
         self.img_path = img_path
+        self.site_mod = site_mod
         super().__init__()
 
     def run(self):
         with open(self.img_path, 'rb') as img_file:
             files = {'captcha_file': img_file}
             requests.post(CAPTCHA_COLLECTION_POST_API,
-                          data={'site': 'etrade.cs.ecitic.com',
+                          data={'site': self.site_mod['site_name'],
                                 'anwser': self.code},
                           files=files)
 
